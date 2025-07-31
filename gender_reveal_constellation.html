@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Constellation Gender Reveal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+            min-height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            position: relative;
+            cursor: crosshair;
+        }
+
+        .stars-container {
+            position: absolute;
+            width: 100vw;
+            height: 100dvh;
+            min-height: 100vh;
+            overflow: hidden;
+            background: 
+                radial-gradient(ellipse at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 10%, rgba(255, 119, 198, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 40% 80%, rgba(120, 119, 255, 0.1) 0%, transparent 50%),
+                linear-gradient(180deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
+            z-index: 1;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 2s infinite alternate;
+        }
+
+        .background-star {
+            width: 2px;
+            height: 2px;
+            opacity: 0.6;
+        }
+
+        .constellation-star, .constellation-star.additional {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            opacity: 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+            visibility: hidden;
+            /* Removed position: relative; */
+        }
+
+        .constellation-star::before {
+            content: '';
+            position: absolute;
+            top: -25px;
+            left: -25px;
+            right: -25px;
+            bottom: -25px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .constellation-star.current {
+            opacity: 1;
+            visibility: visible;
+            background: #FFD700;
+            box-shadow: 0 0 25px #FFD700, 0 0 50px #FFD700;
+            animation: pulse 1.5s infinite;
+        }
+
+        .constellation-star.completed {
+            opacity: 1;
+            visibility: visible;
+            background: white;
+            box-shadow: 0 0 20px white, 0 0 40px white;
+            animation: glow 2s infinite alternate;
+        }
+
+        .constellation-star.additional {
+            opacity: 0.7;
+            visibility: visible;
+            background: #87CEEB;
+            box-shadow: 0 0 10px #87CEEB, 0 0 20px #87CEEB;
+            animation: gentleGlow 3s infinite alternate;
+            cursor: default;
+        }
+
+        @keyframes gentleGlow {
+            0% { opacity: 0.5; }
+            100% { opacity: 0.9; }
+        }
+
+        .touch-hint {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ffd000;
+            padding: 8px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+            opacity: 0;
+            animation: hintPulse 3s infinite;
+            pointer-events: none;
+            z-index: 18;
+        }
+
+        .touch-hint.show {
+            opacity: 1;
+        }
+
+        @keyframes hintPulse {
+            0%, 100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            50% { opacity: 1; transform: translateX(-50%) translateY(0px); }
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes glow {
+            0% { box-shadow: 0 0 15px white, 0 0 30px white; }
+            100% { box-shadow: 0 0 25px white, 0 0 50px white; }
+        }
+
+        .constellation-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .reveal-container {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 100vw;
+            text-align: center;
+            opacity: 0;
+            z-index: 1;
+            color: white;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+            pointer-events: none;
+            overflow: visible;
+        }
+
+        .reveal-container.show {
+            opacity: 1;
+            animation: revealFade 2s ease-in-out;
+        }
+
+        .gender-text {
+            font-size: clamp(2rem, 8vw, 6rem);
+            font-weight: bold;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #FFD700, #FFA500, #FFD700);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 3s infinite;
+            opacity: 0;
+            transform: translateY(40px) scale(0.9); /* Start slightly below */
+            transition: opacity 0.7s cubic-bezier(0.23,1,0.32,1), transform 1.2s cubic-bezier(0.23,1,0.32,1);
+        }
+
+        .gender-text.animate {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            animation: shimmer 3s infinite 1.5s;
+        }
+
+        @keyframes genderReveal {
+            0% {
+                filter: blur(20px);
+            }
+            60% {
+                filter: blur(2px);
+            }
+            100% {
+                filter: blur(0px);
+            }
+        }
+
+        .baby-text {
+            font-size: clamp(1rem, 4vw, 2rem);
+            color: #E8E8E8;
+            font-style: italic;
+        }
+
+        @keyframes revealFade {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .shooting-star {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background: white;
+            border-radius: 50%;
+            z-index: 15;
+        }
+
+        @keyframes shootingStar {
+            0% {
+                transform: translateX(-100px) translateY(100px);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(300px) translateY(-300px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes shootingStar0 {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(200px) translateY(400px); }
+        }
+
+        @keyframes shootingStar1 {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(-400px) translateY(200px); }
+        }
+
+        @keyframes shootingStar2 {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(200px) translateY(-400px); }
+        }
+
+        @keyframes shootingStar3 {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(400px) translateY(200px); }
+        }
+
+        .instructions {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            margin-left: auto;
+            margin-right: auto;
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.7);
+            font-size: 1.4em;
+            z-index: 10;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+            padding-left: 24px;
+            padding-right: 24px;
+            max-width: 90vw;
+            box-sizing: border-box;
+        }
+
+        .instructions.hidden {
+            opacity: 0;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .constellation-star {
+                width: 14px;
+                height: 14px;
+            }
+            
+            .constellation-star::before {
+                top: -30px;
+                left: -30px;
+                right: -30px;
+                bottom: -30px;
+            }
+            
+            .instructions {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .constellation-star {
+                width: 10px;
+                height: 10px;
+            }
+            
+            .constellation-star::before {
+                top: -35px;
+                left: -35px;
+                right: -35px;
+                bottom: -35px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars-container" id="starsContainer"></div>
+    <canvas class="constellation-canvas" id="constellationCanvas"></canvas>
+    
+    <div class="instructions" id="instructions">
+        Click the glowing stars to reveal the secret for the Baby...
+    </div>
+    
+    <div class="reveal-container" id="revealContainer">
+        <div class="gender-text" id="genderText"></div>
+        <div class="baby-text" id="babyText">The stars revealed the secret for the Baby!</div>
+    </div>
+
+    <script>
+        // Configuration - Change these values to customize
+        const CONFIG = {
+            constellation: 'orion', // 'orion' for boy, 'andromeda' for girl
+            familyName: 'SMITH', // Replace with actual family name
+            numBackgroundStars: 150
+        };
+
+        // Constellation data - complete Orion formation
+        const CONSTELLATIONS = {
+            orion: {
+                name: 'Orion',
+                gender: 'BOY',
+                stars: [
+                    // Main clickable stars in order
+                    { name: 'Meissa', x: 0.4, y: 0.45 },          
+                    { name: 'Betelgeuse', x: 0.53, y: 0.388 },      
+                    { name: 'Bellatrix', x: 0.599, y: 0.479 },      
+                    { name: 'Alnitak', x: 0.558, y: 0.656 },        
+                    { name: 'Mintaka', x: 0.493, y: 0.701 },         
+                    { name: 'Saiph', x: 0.449, y: 0.911 },           
+                    { name: 'Rigel', x: 0.673, y: 0.867 }           
+                ],
+                additionalStars: [
+                    // Revealed after main constellation
+                    { name: 'Theta1 Orionis', x: 0.277, y: 0.125 },  
+                    { name: 'Iota Orionis', x: 0.294, y: 0.262 },    
+                    { name: 'Pi1 Orionis', x: 0.356, y: 0.388 },     
+                    { name: 'Pi2 Orionis', x: 0.348, y: 0.1 },    
+                    { name: 'Pi3 Orionis (Tabit)', x: 0.323, y: 0.251 }, 
+                    { name: 'Pi4 Orionis', x: 0.76, y: 0.38 },     
+                    { name: 'Pi5 Orionis', x: 0.78, y: 0.40 },     
+                    { name: 'Pi6 Orionis', x: 0.79, y: 0.46 },      
+                    { name: 'Pi6 Orionis', x: 0.76, y: 0.57 },                          
+                    { name: 'Pi6 Orionis', x: 0.74, y: 0.58 },      
+
+                ],
+                extraLines: [
+                    [0, 4], // main: 1-5 (Meissa-Mintaka)
+                    [3, 6], // main: 4-7 (Alnitak-Rigel)
+                    [2, 14],
+                    [7, 8], // additional: 1-4 (Theta1 Orionis - Pi2 Orionis)
+                    [8, 9], // additional: 4-5 (Pi2 Orionis - Pi3 Orionis)
+                    [10, 11],   // additional: 2-3 (Iota Orionis - Pi1 Orionis)
+                    [11, 8],  // additional: 3-5 (Pi1 Orionis - Pi3 Orionis)
+                    [12, 13], // additional: 6-7 (Pi4 Orionis - Pi5 Orionis)
+                    [13, 14], // additional: 7-8 (Pi5 Orionis - Pi6 Orionis)
+                    [14, 15], // additional: 8-9 (Pi6 Orionis - Pi6 Orionis)
+                    [15, 16],  // additional: 9-10 (Pi6 Orionis - Pi6 Orionis)
+                    [0, 9]  // additional: 9-10 (Pi6 Orionis - Pi6 Orionis)
+
+                ]
+            },
+            andromeda: {
+                name: 'Andromeda',
+                gender: 'GIRL', 
+                stars: [
+                    { name: 'Alpheratz', x: 0.6, y: 0.25 },       // Head
+                    { name: 'Mirach', x: 0.65, y: 0.4 },          // Hip
+                    { name: 'Almach', x: 0.7, y: 0.55 },          // Left foot
+                    { name: 'Delta And', x: 0.55, y: 0.45 },      // Right side
+                    { name: 'Mu And', x: 0.5, y: 0.35 },          // Right arm
+                    { name: 'Nu And', x: 0.75, y: 0.35 },         // Left arm
+                    { name: 'Upsilon And', x: 0.68, y: 0.7 }      // Right foot
+                ]
+            }
+        };
+        // Global variables for params and surname
+        var color1 = '#ff95c8';
+        var color2 = '#5194f8';
+        var color3 ='#969696';
+        var colortxt1 = '#ff0b9a';
+        var colortxt2= '#7FB1ED';
+        var colortxt3= '#000000';
+        //Select the background color
+        var color =color2;
+        //Select the text color
+        var colortxt = colortxt2;
+        var gendertext1 = "It is a Girl!";
+        var gendertext2 = "It is a Boy!";
+        var gendertext3= "It is a Demo!";
+        //Select the gender text
+        var gendertext = gendertext2;
+        var soundHandle = new Audio();
+        var triggered=false;
+        var nosound=true;
+        let params = new URLSearchParams(window.location.search.slice(1));
+        let surname = params.get('surname');
+        // Set constellation based on gendertext
+        if (gendertext.toLowerCase().includes('boy')) {
+            CONFIG.constellation = 'orion';
+        } else if (gendertext.toLowerCase().includes('girl')) {
+            CONFIG.constellation = 'andromeda';
+        }
+
+        class ConstellationReveal {
+            constructor() {
+                this.canvas = document.getElementById('constellationCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.starsContainer = document.getElementById('starsContainer');
+                this.instructions = document.getElementById('instructions');
+                this.revealContainer = document.getElementById('revealContainer');
+                
+                this.currentConstellation = CONSTELLATIONS[CONFIG.constellation];
+                this.currentStarIndex = 0;
+                this.constellationStars = [];
+                this.lines = [];
+                this.isRevealed = false;
+                
+                this.init();
+            }
+            completeReveal() {
+                this.isRevealed = true;
+                // Create shooting stars animation
+                this.createShootingStars();
+                // Show reveal message after short delay
+                setTimeout(() => {
+                    const genderText = document.getElementById('genderText');
+                    genderText.textContent = gendertext;
+                    genderText.classList.add('animate');
+                    // Set gradient color for genderText using color and colortxt
+                    genderText.style.background = `linear-gradient(45deg, ${color}, ${colortxt})`;
+                    genderText.style.backgroundClip = 'text';
+                    genderText.style.webkitBackgroundClip = 'text';
+                    genderText.style.webkitTextFillColor = 'transparent';
+                    genderText.style.textFillColor = 'transparent';
+                    this.revealContainer.classList.add('show');
+                    // Set babyText with surname if set, otherwise fallback
+                    const babyText = document.getElementById('babyText');
+                    if (surname && surname !== 'the Baby') {
+                        babyText.textContent = `The stars revealed the secret for the Baby ${surname}!`;
+                    } else {
+                        babyText.textContent = `The stars revealed the secret for the Baby!`;
+                    }
+                }, 1000);
+            }
+
+            drawExtraLines() {
+                const { extraLines } = this.currentConstellation;
+                if (!extraLines) return;
+                const allStars = [...this.constellationStars, ...(this.additionalStars || [])];
+                extraLines.forEach(([fromIdx, toIdx]) => {
+                    this.drawLine(allStars[fromIdx], allStars[toIdx]);
+                });
+            }
+
+            revealAdditionalStars() {
+                if (this.additionalStars) {
+                    this.additionalStars.forEach((star, index) => {
+                        setTimeout(() => {
+                            star.style.visibility = 'visible';
+                            star.style.opacity = '0.7';
+                            star.classList.add('additional');
+                            // Draw extra lines after all additional stars are visible
+                            if (index === this.additionalStars.length - 1) {
+                                setTimeout(() => {
+                                    this.drawExtraLines();
+                                    // Show the PNG overlay below the stars
+                                    this.showOrionOverlay();
+                                }, 300);
+                            }
+                        }, index * 200);
+                    });
+                }
+            }
+
+            showOrionOverlay() {
+                // Remove if already exists
+                let existing = document.getElementById('orion-overlay-img');
+                if (existing) existing.remove();
+                // Create the image
+                const img = document.createElement('img');
+                img.src = 'stars_orion.png';
+                img.id = 'orion-overlay-img';
+                img.style.position = 'absolute';
+                img.style.left = this.canvas.style.left;
+                img.style.top = this.canvas.style.top;
+                img.style.width = this.canvas.style.width;
+                img.style.height = this.canvas.style.height;
+                img.style.zIndex = 8; // below stars (z-index:10)
+                img.style.pointerEvents = 'none';
+                img.style.opacity = '0'; // Start fully transparent
+                img.style.transition = 'opacity 1.5s ease'; // Animate fade-in
+                // Insert before starsContainer so it's below the stars
+                document.body.insertBefore(img, this.starsContainer);
+                // Trigger fade-in
+                setTimeout(() => { img.style.opacity = '0.5'; }, 50);
+            }
+            init() {
+                this.setupCanvas();
+                this.createBackgroundStars();
+                this.createConstellationStars();
+                // Update instructions with family name or fallback
+                if (surname && surname !== 'the Baby') {
+                    this.instructions.textContent = `Click the glowing star to reveal the secret for the Baby ${surname}...`;
+                } else {
+                    this.instructions.textContent = `Click the glowing star to reveal the secret for the Baby...`;
+                }
+                // Show first star
+                this.highlightCurrentStar();
+                window.addEventListener('resize', () => this.setupCanvas());
+            }
+
+            setupCanvas() {
+                // Make canvas square, width and height = min(window.innerWidth, window.innerHeight)
+                const size = Math.min(window.innerWidth, window.innerHeight);
+                this.canvas.width = size;
+                this.canvas.height = size;
+                this.canvas.style.width = size + 'px';
+                this.canvas.style.height = size + 'px';
+                this.canvas.style.position = 'absolute';
+                this.canvas.style.left = ((window.innerWidth - size) / 2) + 'px';
+                // If portrait, move canvas 20% down
+                if (window.innerHeight > window.innerWidth) {
+                    this.canvas.style.top = (window.innerHeight * 0.2) + 'px';
+                } else {
+                    this.canvas.style.top = '0px';
+                }
+                // Make starsContainer full screen for background
+                this.starsContainer.style.width = '100vw';
+                this.starsContainer.style.height = '100vh';
+                this.starsContainer.style.position = 'absolute';
+                this.starsContainer.style.left = '0';
+                this.starsContainer.style.top = '0';
+                // Re-create stars and redraw lines if needed
+                this.createConstellationStars();
+            }
+
+            createBackgroundStars() {
+                for (let i = 0; i < CONFIG.numBackgroundStars; i++) {
+                    const star = document.createElement('div');
+                    star.className = 'star background-star';
+                    star.style.left = Math.random() * 100 + '%';
+                    star.style.top = Math.random() * 100 + '%';
+                    star.style.animationDelay = Math.random() * 2 + 's';
+                    star.style.animationDuration = (1 + Math.random() * 2) + 's';
+                    this.starsContainer.appendChild(star);
+                }
+            }
+
+            createConstellationStars() {
+                const margin = 0.00; // 5% margin
+                // Remove any previous stars if resizing
+                this.constellationStars.forEach(star => star.remove());
+                this.constellationStars = [];
+                if (this.additionalStars) {
+                    this.additionalStars.forEach(star => star.remove());
+                }
+                this.additionalStars = [];
+
+                // Get canvas offset for correct placement
+                const canvasRect = this.canvas.getBoundingClientRect();
+                const leftOffset = this.canvas.offsetLeft;
+                const topOffset = this.canvas.offsetTop;
+
+                // Create main clickable stars
+                this.currentConstellation.stars.forEach((starData, index) => {
+                    const star = document.createElement('div');
+                    star.className = 'star constellation-star';
+                    // Use px for precise placement based on canvas size and offset
+                    star.style.left = ((margin + starData.x * (1 - 2 * margin)) * this.canvas.width + leftOffset) + 'px';
+                    star.style.top = ((margin + starData.y * (1 - 2 * margin)) * this.canvas.height + topOffset) + 'px';
+                    star.style.visibility = 'hidden';
+                    star.style.opacity = '0';
+                    star.dataset.index = index;
+
+                    // Create touch hint
+                    const touchHint = document.createElement('div');
+                    touchHint.className = 'touch-hint';
+                    touchHint.textContent = 'Touch here';
+                    star.appendChild(touchHint);
+
+                    star.addEventListener('click', (e) => this.handleStarClick(e, index));
+
+                    this.starsContainer.appendChild(star);
+                    this.constellationStars.push(star);
+                });
+
+                // Create additional stars (not clickable)
+                if (this.currentConstellation.additionalStars) {
+                    this.currentConstellation.additionalStars.forEach((starData, index) => {
+                        const star = document.createElement('div');
+                        star.className = 'star constellation-star additional';
+                        // Use px for precise placement based on canvas size and offset (same as main stars)
+                        star.style.left = ((margin + starData.x * (1 - 2 * margin)) * this.canvas.width + this.canvas.offsetLeft) + 'px';
+                        star.style.top = ((margin + starData.y * (1 - 2 * margin)) * this.canvas.height + this.canvas.offsetTop) + 'px';
+                        star.style.visibility = 'hidden';
+                        star.style.opacity = '0';
+
+                        this.starsContainer.appendChild(star);
+                        this.additionalStars.push(star);
+                    });
+                }
+            }
+
+            highlightCurrentStar() {
+                if (this.currentStarIndex < this.constellationStars.length) {
+                    // Clear all current highlights and hints first
+                    this.constellationStars.forEach(star => {
+                        star.classList.remove('current');
+                        const hint = star.querySelector('.touch-hint');
+                        if (hint) hint.classList.remove('show');
+                    });
+                    
+                    // Clear any existing hint timer
+                    if (this.hintTimer) {
+                        clearTimeout(this.hintTimer);
+                    }
+                    
+                    // Show and highlight current star
+                    const currentStar = this.constellationStars[this.currentStarIndex];
+                    currentStar.style.visibility = 'visible';
+                    currentStar.style.opacity = '1';
+                    currentStar.classList.add('current');
+                    
+                    // Set timer for touch hint (random between 3-5 seconds)
+                    const hintDelay = 3000 + Math.random() * 2000; // 3-5 seconds
+                    this.hintTimer = setTimeout(() => {
+                        const hint = currentStar.querySelector('.touch-hint');
+                        if (hint && currentStar.classList.contains('current')) {
+                            hint.classList.add('show');
+                        }
+                    }, hintDelay);
+                    
+                    console.log(`Highlighting star ${this.currentStarIndex}: ${this.currentConstellation.stars[this.currentStarIndex].name}`);
+                }
+            }
+
+            handleStarClick(event, clickedIndex) {
+                console.log(`Clicked star ${clickedIndex}, expected ${this.currentStarIndex}`);
+                
+                if (this.isRevealed || clickedIndex !== this.currentStarIndex) {
+                    console.log('Click rejected - wrong star or already revealed');
+                    return;
+                }
+                
+                // Clear hint timer
+                if (this.hintTimer) {
+                    clearTimeout(this.hintTimer);
+                }
+                
+                const star = this.constellationStars[clickedIndex];
+                console.log(`Processing click on ${this.currentConstellation.stars[clickedIndex].name}`);
+                
+                // Hide touch hint
+                const hint = star.querySelector('.touch-hint');
+                if (hint) {
+                    hint.classList.remove('show');
+                    hint.style.display = 'none';
+                }
+                
+                // Mark star as completed
+                star.classList.remove('current');
+                star.classList.add('completed');
+                star.style.visibility = 'visible';
+                star.style.opacity = '1';
+                
+                // Draw line to previous star
+                if (this.currentStarIndex > 0) {
+                    this.drawLine(
+                        this.constellationStars[this.currentStarIndex - 1],
+                        star
+                    );
+                }
+                
+                this.currentStarIndex++;
+                console.log(`Moving to star index ${this.currentStarIndex}`);
+                
+                // Hide instructions after first click
+                if (this.currentStarIndex === 1) {
+                    this.instructions.classList.add('hidden');
+                }
+                
+                // Check if main constellation is complete
+                if (this.currentStarIndex >= this.constellationStars.length) {
+                    console.log('Main constellation complete! Revealing additional stars...');
+                    this.revealAdditionalStars();
+                    setTimeout(() => {
+                        this.completeReveal();
+                    }, 1000);
+                } else {
+                    // Show next star
+                    setTimeout(() => {
+                        this.highlightCurrentStar();
+                    }, 100);
+                }
+            }
+
+            drawLine(fromStar, toStar) {
+                // Draw lines using the DOM position of the stars, relative to the canvas
+                const canvasRect = this.canvas.getBoundingClientRect();
+                const fromRect = fromStar.getBoundingClientRect();
+                const toRect = toStar.getBoundingClientRect();
+                const fromX = (fromRect.left - canvasRect.left) + fromRect.width / 2;
+                const fromY = (fromRect.top - canvasRect.top) + fromRect.height / 2;
+                const toX = (toRect.left - canvasRect.left) + toRect.width / 2;
+                const toY = (toRect.top - canvasRect.top) + toRect.height / 2;
+                this.ctx.strokeStyle = '#FFD700';
+                this.ctx.lineWidth = 3;
+                this.ctx.shadowColor = '#FFD700';
+                this.ctx.shadowBlur = 15;
+                this.ctx.beginPath();
+                this.ctx.moveTo(fromX, fromY);
+                this.ctx.lineTo(toX, toY);
+                this.ctx.stroke();
+            }
+
+            completeReveal() {
+                this.isRevealed = true;
+                // Create shooting stars animation
+                this.createShootingStars();
+                // Show reveal message after short delay
+                setTimeout(() => {
+                    const genderText = document.getElementById('genderText');
+                    genderText.textContent = gendertext;
+                    genderText.classList.add('animate');
+                    // Set gradient color for genderText using color and colortxt
+                    genderText.style.background = `linear-gradient(45deg, ${color}, ${colortxt})`;
+                    genderText.style.backgroundClip = 'text';
+                    genderText.style.webkitBackgroundClip = 'text';
+                    genderText.style.webkitTextFillColor = 'transparent';
+                    genderText.style.textFillColor = 'transparent';
+                    this.revealContainer.classList.add('show');
+                    // Set babyText with surname if set, otherwise fallback
+                    const babyText = document.getElementById('babyText');
+                    if (surname && surname !== 'the Baby') {
+                        babyText.textContent = `The stars revealed the secret for the Baby ${surname}!`;
+                    } else {
+                        babyText.textContent = `The stars revealed the secret for the Baby!`;
+                    }
+                }, 1000);
+            }
+
+            createShootingStars() {
+                for (let i = 0; i < 12; i++) {
+                    setTimeout(() => {
+                        const shootingStar = document.createElement('div');
+                        shootingStar.className = 'shooting-star';
+                        
+                        // Random starting positions from different edges
+                        const side = Math.floor(Math.random() * 4);
+                        let startX, startY, endX, endY;
+                        
+                        switch(side) {
+                            case 0: // Top edge
+                                startX = Math.random() * 100;
+                                startY = -10;
+                                endX = Math.random() * 100;
+                                endY = 110;
+                                break;
+                            case 1: // Right edge  
+                                startX = 110;
+                                startY = Math.random() * 100;
+                                endX = -10;
+                                endY = Math.random() * 100;
+                                break;
+                            case 2: // Bottom edge
+                                startX = Math.random() * 100;
+                                startY = 110;
+                                endX = Math.random() * 100;
+                                endY = -10;
+                                break;
+                            case 3: // Left edge
+                                startX = -10;
+                                startY = Math.random() * 100;
+                                endX = 110;
+                                endY = Math.random() * 100;
+                                break;
+                        }
+                        
+                        shootingStar.style.left = startX + '%';
+                        shootingStar.style.top = startY + '%';
+                        shootingStar.style.setProperty('--endX', endX + '%');
+                        shootingStar.style.setProperty('--endY', endY + '%');
+                        
+                        shootingStar.style.animation = `shootingStar${side} ${1 + Math.random() * 1}s linear forwards`;
+                        shootingStar.style.boxShadow = '0 0 15px white, 0 0 30px white';
+                        shootingStar.style.width = '3px';
+                        shootingStar.style.height = '3px';
+                        
+                        this.starsContainer.appendChild(shootingStar);
+                        
+                        setTimeout(() => {
+                            shootingStar.remove();
+                        }, 2000);
+                    }, i * 150);
+                }
+            }
+
+            updateBabyText() {
+                const babyText = document.getElementById('babyText');
+                babyText.textContent = `The stars revealed the secret for baby`;
+            }
+        }
+
+        // Initialize the reveal when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new ConstellationReveal();
+        });
+    </script>
+</body>
+</html>
