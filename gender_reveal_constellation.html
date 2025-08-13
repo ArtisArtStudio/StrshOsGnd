@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"/> 
     <meta name="color-scheme" content="dark only">
     <title>Constellation Gender Reveal</title>
     <link href="main.css" rel="stylesheet" type="text/css">
@@ -234,37 +234,53 @@
                         this.createBackgroundStars();
                         this.createConstellationStars();
                         this.highlightCurrentStar();
-                    }, 200);
+                    }, 500);
                  
             }
 
             setupCanvas() {
+                  const isLandscape = window.matchMedia('(orientation: landscape)').matches;
                 // Use visualViewport for mobile toolbars if available
-                let availW = window.visualViewport ? window.visualViewport.width : window.innerWidth;
-                let availH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+                let W = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+                let H = window.visualViewport ? window.visualViewport.height : window.innerHeight;
                 if (window.screen && window.screen.availWidth && window.screen.availHeight) {
-                    availW = Math.min(availW, window.screen.availWidth);
-                    availH = Math.min(availH, window.screen.availHeight);
+                    W = Math.min(W, window.screen.availWidth);
+                    H = Math.min(H, window.screen.availHeight);
                 }
-                let size, leftMargin = 0, topMargin = 0;
-                if (window.matchMedia('(orientation: landscape)').matches && availW > availH) {
-                    // Landscape: use left half of the screen, minus margin
-                    size = Math.min(availW * 0.5, availH) * 0.95;
-                    leftMargin = size * 0.05; // 2.5% of screen width as margin
-                    topMargin = size*0.5;
+
+                const cs = getComputedStyle(document.documentElement);
+                const safeLeft = parseFloat(cs.getPropertyValue('--safe-left')) || 0;
+                const safeTop  = parseFloat(cs.getPropertyValue('--safe-top'))  || 0;
+
+                let size, left, top;
+
+                if (isLandscape) {
+                    W = Math.max(window.innerWidth, window.innerHeight);
+                    H = Math.min(window.innerWidth, window.innerHeight);
+                    // square that fits half the width or full height, with small padding
+                    size = Math.min(W * 0.5, H) * 0.95;
+                    // center in LEFT half: center at 25% of width
+                    left = safeLeft + (W * 0.25) - (size / 1.8);
+                    top  = safeTop  + (H * 0.5)  - (size / 1.8);
+
+                    this.canvas.style.transform = 'none';   // kill any lingering center transform
                 } else {
-                    // Portrait: use min of width/height, minus margin
-                    size = Math.min(availW, availH) * 0.95;
-                    leftMargin = size / 2;
-                    topMargin = (availH * 0.5);
+                    size = Math.min(W, H) * 0.95;
+                    left = (W * 0.5) - (size / 1.8);
+                    top  = (H * 0.5) - (size / 2);
+                    this.canvas.style.transform = 'none';   // or keep portrait centering via CSS
                 }
+
                 this.canvas.width = size;
                 this.canvas.height = size;
-                this.canvas.style.width = size + 'px';
-                this.canvas.style.height = size + 'px';
-                this.canvas.style.position = 'absolute';
-                this.canvas.style.top = topMargin + 'px';
-                this.canvas.style.left = leftMargin + 'px';
+                Object.assign(this.canvas.style, {
+                    position: 'fixed',
+                    width:  size + 'px',
+                    height: size + 'px',
+                    left:   left + 'px',
+                    top:    top  + 'px'
+                });
+
                 // If portrait, move canvas 20% down
                 /* if (window.innerHeight > window.innerWidth) {
                     this.canvas.style.top = (window.innerHeight * 0.2) + 'px';
@@ -520,8 +536,8 @@
                         const shootingStar = document.createElement('div');
                         shootingStar.className = 'shooting-star';
                         // Randomize which edge to start from (top, left, right)
-                        let edge = Math.floor(Math.random() * 2);
-                        
+                        let edge = Math.floor(Math.random() * 3);
+                        edge = 1;
                         let startX, startY, endX, endY;
                         if (edge === 0) { // Top edge
                             startX = canvasRect.left + Math.random() * canvasRect.width;

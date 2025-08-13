@@ -18,21 +18,14 @@ body {
 }
 
 .constellation-canvas {
+    
+    left: var(--safe-left);       /* hug the safe left edge */
+    top: 50vh;
     position: absolute;
-    left: 0;
-    top: 0;
     z-index: 5;
-    align-content: left;
-    -webkit-transform: translateY(-50%);
-    -ms-transform: translateY(-50%);
-    -moz-transform: translateY(-50%);
-    -o-transform: translateY(-50%);
-    transform: translateY(-50%);
-    top: 50%;
-    left: 0%;
-
+   
+    
 }
-
 .reveal-container {
     position: absolute;
     top: 30%;
@@ -52,7 +45,7 @@ body {
 }
 
 .gender-text {
-    font-size: clamp(2rem, 7vw, 6rem);
+    font-size: 7vw;
     font-weight: bold;
     margin-bottom: 0.5rem;
     background: rgba(0, 0, 0, 0.7);
@@ -72,7 +65,7 @@ body {
             100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
 .baby-text {
-    font-size: clamp(1rem, 3vw, 2rem);
+    font-size: 3vw;
     color: #E8E8E8;
     font-style: italic;
     background: rgba(0, 0, 0, 0.7);
