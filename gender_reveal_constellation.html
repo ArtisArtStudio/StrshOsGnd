@@ -239,7 +239,7 @@
             }
 
             setupCanvas() {
-                  const isLandscape = window.matchMedia('(orientation: landscape)').matches;
+                const isLandscape = window.matchMedia('(orientation: landscape) and (max-width: 1023px)').matches;
                 // Use visualViewport for mobile toolbars if available
                 let W = window.visualViewport ? window.visualViewport.width : window.innerWidth;
                 let H = window.visualViewport ? window.visualViewport.height : window.innerHeight;

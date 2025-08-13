@@ -299,7 +299,18 @@
 @media (min-height: 635px) and (min-width: 1024px){ 
     .instructions {
         font-size: 3rem;
-    }  
+    }
+    .gender-text {
+        font-size: 7rem;
+    }
+    .baby-text {
+        font-size:2rem;
+    }
+    .constellation-canvas {
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+  }
 }
 @media (max-width: 320px) { 
   .instructions {
