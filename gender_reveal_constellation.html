@@ -54,7 +54,7 @@
                     { name: 'Pi5 Orionis', x: 0.78, y: 0.40 },     
                     { name: 'Pi6 Orionis', x: 0.79, y: 0.46 },      
                     { name: 'Pi6 Orionis', x: 0.76, y: 0.57 },                          
-                    { name: 'Pi6 Orionis', x: 0.74, y: 0.58 },      
+                    { name: 'Pi6 Orionis', x: 0.74, y: 0.58 }      
 
                 ],
                 extraLines: [
@@ -77,14 +77,39 @@
                 name: 'Andromeda',
                 gender: 'GIRL', 
                 stars: [
-                    { name: 'Alpheratz', x: 0.6, y: 0.25 },       // Head
-                    { name: 'Mirach', x: 0.65, y: 0.4 },          // Hip
-                    { name: 'Almach', x: 0.7, y: 0.55 },          // Left foot
-                    { name: 'Delta And', x: 0.55, y: 0.45 },      // Right side
-                    { name: 'Mu And', x: 0.5, y: 0.35 },          // Right arm
-                    { name: 'Nu And', x: 0.75, y: 0.35 },         // Left arm
-                    { name: 'Upsilon And', x: 0.68, y: 0.7 }      // Right foot
-                ]
+                    { name: 'Alpheratz', x: 0.296, y: 0.389 },       // Head
+                    { name: 'Mirach', x: 0.453, y: 0.441 },          // Hip
+                    { name: 'Almach', x: 0.594, y: 0.458 },          // Left foot
+                    { name: 'Delta And', x: 0.649, y: 0.427 },      // Right side
+                    { name: 'Mu And', x: 0.635, y: 0.597 },          // Right arm
+                    { name: 'Nu And', x: 0.548, y: 0.584 },         // Left arm
+                    { name: 'Upsilon And', x: 0.491, y: 0.592 },      // Right foot
+                    { name: 'Upsilon And', x: 0.412, y: 0.718 }      // Right foot
+
+                ],
+                additionalStars: [
+                    // Revealed after main constellation
+                    { name: '', x: 0.184, y: 0.280 },  
+                    { name: '', x: 0.219, y: 0.442 },    
+                    { name: '', x: 0.269, y: 0.420 },     
+                    { name: '', x: 0.603, y: 0.288 },    
+                    { name: '', x: 0.690, y: 0.403 },     
+                    { name: '', x: 0.792, y: 0.379 },     
+                    { name: '', x: 0.844, y: 0.422 },      
+                    { name: '', x: 0.592, y: 0.869 },                          
+                    { name: '', x: 0.427, y: 0.835 }
+                ],
+                 extraLines: [
+                    [0, 8], 
+                    [9, 10], 
+                    [10, 0],
+                    [11,3],
+                    [12,3],
+                    [13,12],
+                    [14,13],
+                    [15,4],
+                    [16,7]
+                ]      
             }
         };
         // Global variables for params and surname
@@ -96,14 +121,14 @@
         var colortxt2= '#88BEFFFF';
         var colortxt3= '#000000';
         //Select the background color
-        var color =color2;
+        var color =color1;
         //Select the text color
-        var colortxt = colortxt2;
+        var colortxt = colortxt1;
         var gendertext1 = "It is a Girl!";
         var gendertext2 = "It is a Boy!";
         var gendertext3= "It is a Demo!";
         //Select the gender text
-        var gendertext = gendertext2;
+        var gendertext = gendertext1;
         var soundHandle = new Audio();
         var triggered=false;
         var nosound=true;
@@ -214,13 +239,32 @@
             }
 
             setupCanvas() {
-                // Make canvas square, width and height = min(window.innerWidth, window.innerHeight)
-                const size = Math.min(window.innerWidth, window.innerHeight);
+                // Use visualViewport for mobile toolbars if available
+                let availW = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+                let availH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+                if (window.screen && window.screen.availWidth && window.screen.availHeight) {
+                    availW = Math.min(availW, window.screen.availWidth);
+                    availH = Math.min(availH, window.screen.availHeight);
+                }
+                let size, leftMargin = 0, topMargin = 0;
+                if (window.matchMedia('(orientation: landscape)').matches && availW > availH) {
+                    // Landscape: use left half of the screen, minus margin
+                    size = Math.min(availW * 0.5, availH) * 0.95;
+                    leftMargin = size * 0.05; // 2.5% of screen width as margin
+                    topMargin = size*0.5;
+                } else {
+                    // Portrait: use min of width/height, minus margin
+                    size = Math.min(availW, availH) * 0.95;
+                    leftMargin = size / 2;
+                    topMargin = (availH * 0.5);
+                }
                 this.canvas.width = size;
                 this.canvas.height = size;
                 this.canvas.style.width = size + 'px';
                 this.canvas.style.height = size + 'px';
                 this.canvas.style.position = 'absolute';
+                this.canvas.style.top = topMargin + 'px';
+                this.canvas.style.left = leftMargin + 'px';
                 // If portrait, move canvas 20% down
                 /* if (window.innerHeight > window.innerWidth) {
                     this.canvas.style.top = (window.innerHeight * 0.2) + 'px';
@@ -232,7 +276,6 @@
                 this.starsContainer.style.position = 'absolute';
                 this.starsContainer.style.left = '0';
                 this.starsContainer.style.top = '0';
-               
             }
 
             createBackgroundStars() {
@@ -470,59 +513,53 @@
             }
 
             createShootingStars() {
-                let w=window.innerWidth;
-                let h=window.innerHeight;
-                for (let i = 0; i < 50; i++) {
+                // Get canvas position and size
+                const canvasRect = this.canvas.getBoundingClientRect();
+                for (let i = 0; i < 100; i++) {
                     setTimeout(() => {
                         const shootingStar = document.createElement('div');
                         shootingStar.className = 'shooting-star';
+                        // Randomize which edge to start from (top, left, right)
+                        let edge = Math.floor(Math.random() * 2);
                         
-                        // Random starting positions from different edges
-                        let side = Math.floor(Math.random() * 4);
-                        side = 2;
                         let startX, startY, endX, endY;
-                        switch(side) {
-                            case 0: // Top edge
-                                startX = 0;
-                                startY = -10;
-                                endX =  w;
-                                endY = h;
-                                break;
-                            case 1: // Right edge  
-                                startX = w+10;
-                                startY = Math.random() * h;
-                                endX = -10;
-                                endY = h+10;
-                                break;
-                            case 2: // Bottom edge
-                                startX = Math.random() * w;
-                                startY = h+10;
-                                endX = w+10;
-                                endY = Math.random() * h;
-                                break;
-                            case 3: // Left edge
-                                startX = -10;
-                                startY = Math.random() * 100;
-                                endX = 110;
-                                endY = Math.random() * 100;
-                                break;
+                        if (edge === 0) { // Top edge
+                            startX = canvasRect.left + Math.random() * canvasRect.width;
+                            startY = canvasRect.top - 30;
+                            endX = startX + 100 + Math.random() * 100;
+                            endY = canvasRect.top + canvasRect.height + 30;
+                        } else if (edge === 1) { // Left edge
+                            startX = canvasRect.left - 30;
+                            startY = canvasRect.top + Math.random() * canvasRect.height;
+                            endX = canvasRect.left + canvasRect.width + 30;
+                            endY = startY + 100 + Math.random() * 100;
+                        } else { // Right edge
+                            startX = canvasRect.left + canvasRect.width + 30;
+                            startY = canvasRect.top + Math.random() * canvasRect.height;
+                            endX = canvasRect.left - 30;
+                            endY = startY - 100 - Math.random() * 100;
                         }
-                        
-                        shootingStar.style.left = startX + '%';
-                        shootingStar.style.top = startY + '%';
-                        shootingStar.style.setProperty('--endX', endX + '%');
-                        shootingStar.style.setProperty('--endY', endY + '%');
-                        
-                        shootingStar.style.animation = `shootingStar${side} 0.5s linear forwards`;
-                        shootingStar.style.boxShadow = '0 0 15px white, 0 0 30px white';
+                        shootingStar.style.position = 'fixed';
+                        shootingStar.style.left = startX + 'px';
+                        shootingStar.style.top = startY + 'px';
                         shootingStar.style.width = '5px';
                         shootingStar.style.height = '5px';
-                        
-                        this.starsContainer.appendChild(shootingStar);
-                        
+                        shootingStar.style.background = 'white';
+                        shootingStar.style.borderRadius = '50%';
+                        shootingStar.style.zIndex = 15;
+                        shootingStar.style.boxShadow = '0 0 15px white, 0 0 30px white';
+                        shootingStar.animate([
+                            { transform: `translate(0px, 0px)`, opacity: 1 },
+                            { transform: `translate(${endX - startX}px, ${endY - startY}px)`, opacity: 0 }
+                        ], {
+                            duration: 900 + Math.random() * 400,
+                            easing: 'linear',
+                            fill: 'forwards'
+                        });
+                        document.body.appendChild(shootingStar);
                         setTimeout(() => {
                             shootingStar.remove();
-                        }, 10000);
+                        }, 1200);
                     }, i * 50);
                 }
             }
