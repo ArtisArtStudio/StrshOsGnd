@@ -187,7 +187,7 @@
             }
 
             showOrionOverlay(updateOnly = false) {
-                let img = document.getElementById('orion-overlay-img');
+                let img = document.getElementById('overlay-img');
                 const canvasRect = this.canvas.getBoundingClientRect();
                 if (img && updateOnly) {
                     img.style.left = canvasRect.left + 'px';
@@ -198,8 +198,8 @@
                 }
                 if (img) img.remove();
                 img = document.createElement('img');
-                img.src = 'stars_orion.png';
-                img.id = 'orion-overlay-img';
+                img.src = 'overlay.png';
+                img.id = 'overlay-img';
                 img.style.position = 'absolute';
                 img.style.left = canvasRect.left + 'px';
                 img.style.top = canvasRect.top + 'px';
