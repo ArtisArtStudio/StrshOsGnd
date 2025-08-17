@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"/> 
     <meta name="color-scheme" content="dark only">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alegreya+SC&display=swap" rel="stylesheet">
     <title>Constellation Gender Reveal</title>
     <link href="main.css" rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="main_landscape.css" media="screen and (orientation: landscape) and (max-width: 1023px)">
@@ -77,27 +80,27 @@
                 name: 'Andromeda',
                 gender: 'GIRL', 
                 stars: [
-                    { name: 'Alpheratz', x: 0.296, y: 0.389 },       // Head
-                    { name: 'Mirach', x: 0.453, y: 0.441 },          // Hip
-                    { name: 'Almach', x: 0.594, y: 0.458 },          // Left foot
-                    { name: 'Delta And', x: 0.649, y: 0.427 },      // Right side
-                    { name: 'Mu And', x: 0.635, y: 0.597 },          // Right arm
-                    { name: 'Nu And', x: 0.548, y: 0.584 },         // Left arm
-                    { name: 'Upsilon And', x: 0.491, y: 0.592 },      // Right foot
-                    { name: 'Upsilon And', x: 0.412, y: 0.718 }      // Right foot
+                    { name: 'Alpheratz', x: 0.284, y: 0.339 },       // Head
+                    { name: 'Mirach', x: 0.453, y: 0.391 },          // Hip
+                    { name: 'Almach', x: 0.594, y: 0.408 },          // Left foot
+                    { name: 'Delta And', x: 0.649, y: 0.377 },      // Right side
+                    { name: 'Mu And', x: 0.635, y: 0.547 },          // Right arm
+                    { name: 'Nu And', x: 0.548, y: 0.534 },         // Left arm
+                    { name: 'Upsilon And', x: 0.491, y: 0.542 },      // Right foot
+                    { name: 'Upsilon And', x: 0.412, y: 0.668 }      // Right foot
 
                 ],
                 additionalStars: [
                     // Revealed after main constellation
-                    { name: '', x: 0.184, y: 0.280 },  
-                    { name: '', x: 0.219, y: 0.442 },    
-                    { name: '', x: 0.269, y: 0.420 },     
-                    { name: '', x: 0.603, y: 0.288 },    
-                    { name: '', x: 0.690, y: 0.403 },     
-                    { name: '', x: 0.792, y: 0.379 },     
-                    { name: '', x: 0.844, y: 0.422 },      
-                    { name: '', x: 0.592, y: 0.869 },                          
-                    { name: '', x: 0.427, y: 0.835 }
+                    { name: '', x: 0.184, y: 0.230 },  
+                    { name: '', x: 0.219, y: 0.392 },    
+                    { name: '', x: 0.269, y: 0.370 },     
+                    { name: '', x: 0.603, y: 0.238 },    
+                    { name: '', x: 0.690, y: 0.353 },     
+                    { name: '', x: 0.792, y: 0.329 },     
+                    { name: '', x: 0.844, y: 0.372 },      
+                    { name: '', x: 0.592, y: 0.819 },                          
+                    { name: '', x: 0.427, y: 0.785 }
                 ],
                  extraLines: [
                     [0, 8], 
@@ -139,6 +142,12 @@
             CONFIG.constellation = 'orion';
         } else if (gendertext.toLowerCase().includes('girl')) {
             CONFIG.constellation = 'andromeda';
+        }
+        // Update instructions with family name or fallback
+        if (surname === null || surname.replace(/\s/g, '').length === 0) {
+            surname= 'the Baby';
+        } else{
+            surname = 'the Baby ' + surname;
         }
         class ConstellationReveal {
             constructor() {
@@ -214,14 +223,10 @@
             }
            
             init() {
+                // Set additional star color to colortxt at the beginning
+                document.documentElement.style.setProperty('--additional-star-color', colortxt);
                 this.handleResizeOrOrientationChange();
-                // Update instructions with family name or fallback
-                if (surname === null || surname.replace(/\s/g, '').length === 0) {
-                    surname= 'the Baby';
-                } else{
-                    surname = 'the Baby ' + surname;
-                }
-                this.instructions.textContent = 'Click the glowing star to reveal the secret for ' + surname + '...';
+                this.instructions.textContent = 'Click the glowing stars to reveal the secret for ' + surname + '...';
                 // Show first star
                 window.addEventListener('resize', () => this.handleResizeOrOrientationChange());
                 window.addEventListener('orientationchange', () => this.handleResizeOrOrientationChange());
@@ -479,24 +484,32 @@
                 }
             }
 
-            drawLine(fromStar, toStar) {
-                // Draw lines using the DOM position of the stars, relative to the canvas
-                const canvasRect = this.canvas.getBoundingClientRect();
-                const fromRect = fromStar.getBoundingClientRect();
-                const toRect = toStar.getBoundingClientRect();
-                const fromX = (fromRect.left - canvasRect.left) + fromRect.width / 2;
-                const fromY = (fromRect.top - canvasRect.top) + fromRect.height / 2;
-                const toX = (toRect.left - canvasRect.left) + toRect.width / 2;
-                const toY = (toRect.top - canvasRect.top) + toRect.height / 2;
-                this.ctx.strokeStyle = '#FFD700';
-                this.ctx.lineWidth = 3;
-                this.ctx.shadowColor = '#FFD700';
-                this.ctx.shadowBlur = 15;
-                this.ctx.beginPath();
-                this.ctx.moveTo(fromX, fromY);
-                this.ctx.lineTo(toX, toY);
-                this.ctx.stroke();
-            }
+           drawLine(fromStar, toStar) {
+            // Draw lines using the DOM position of the stars, relative to the canvas
+            const canvasRect = this.canvas.getBoundingClientRect();
+            const fromRect = fromStar.getBoundingClientRect();
+            const toRect = toStar.getBoundingClientRect();
+            const fromX = (fromRect.left - canvasRect.left) + fromRect.width / 2;
+            const fromY = (fromRect.top - canvasRect.top) + fromRect.height / 2;
+            const toX = (toRect.left - canvasRect.left) + toRect.width / 2;
+            const toY = (toRect.top - canvasRect.top) + toRect.height / 2;
+
+            // Create gradient along the line
+            const gradient = this.ctx.createLinearGradient(fromX, fromY, toX, toY);
+            gradient.addColorStop(0.0, "rgba(255, 215, 0, 0)");     // transparent at start
+            gradient.addColorStop(0.3, "rgba(255, 215, 0, 0.6)");   // fade in
+            gradient.addColorStop(0.5, "rgba(255, 215, 0, 1)");     // brightest at middle
+            gradient.addColorStop(0.7, "rgba(255, 215, 0, 0.6)");   // fade out
+            gradient.addColorStop(1.0, "rgba(255, 215, 0, 0)");     // transparent at end
+
+            this.ctx.strokeStyle = gradient;
+            this.ctx.lineWidth = 3;
+
+            this.ctx.beginPath();
+            this.ctx.moveTo(fromX, fromY);
+            this.ctx.lineTo(toX, toY);
+            this.ctx.stroke();
+        }
 
             completeReveal() {
                 this.isRevealed = true;
@@ -519,9 +532,9 @@
                     const babyText = document.getElementById('babyText');                    
                    
                     if (gendertext==gendertext2){
-                        babyText.textContent= surname + ' will be Strong and bold — just like Orion, the great hunter in the sky';
+                        babyText.textContent = surname + ' will be Strong and Bold — just like Orion, the great hunter in the sky';
                     }else {
-                        babyText.textContent=surname + ' will be Graceful and radiant — like Andromeda, the princess of the stars';
+                        babyText.textContent = surname + ' will be Graceful and Radiant — like Andromeda, the princess of the stars';
 
                     }
 

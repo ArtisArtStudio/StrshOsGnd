@@ -83,8 +83,8 @@
         .constellation-star.additional {
             opacity: 0.7;
             visibility: visible;
-            background: #87CEEB;
-            box-shadow: 0 0 0.625rem #87CEEB, 0 0 1.25rem #87CEEB;
+            background: var(--additional-star-color, #87CEEB);
+            box-shadow: 0 0 0.625rem var(--additional-star-color, #87CEEB), 0 0 1.25rem var(--additional-star-color, #87CEEB);
             animation: gentleGlow 3s infinite alternate;
             cursor: default;
         }
@@ -273,6 +273,9 @@
 
         .instructions {
             position: absolute;
+            font-family: "Alegreya SC", serif;
+            font-weight: 400;
+            font-style: normal;
             top: 20px;
             left: 0;
             right: 0;
