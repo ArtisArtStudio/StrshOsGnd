@@ -13,6 +13,20 @@
 
 </head>
 <body>
+    <div id="id01" class="modal">
+        <span onclick="document.getElementById('id01').style.display='none'" class="close" title="Close">×</span>
+        <form class="modal-content" action="javascript:void(0);">
+        <div class="container">
+            <h2 id="intro">This is a gender reveal star constellation for <span id="surname" style="font-weight:bold; white-space:normal">the</span> family. It contains high level sound. Do you want to continue with sound?</h2>      
+            <!-- <h5 style="color:red; white-space: normal;">This is a demo with limited functionality. So only middle row can be scratched.</h5> -->
+            <div class="clearfix">
+            <button type="button" id="nosoundbtn">No Sound</button>
+            <button type="button" id="withsoundbtn">With Sound</button>
+            </div>
+        </div>
+        </form>
+    </div>
+    <audio id="soundHandle" style="display:none;" src="" type="audio/mpeg"></audio>
     <div class="stars-container" id="starsContainer"></div>
     <canvas class="constellation-canvas" id="constellationCanvas"></canvas>
     
@@ -150,6 +164,7 @@
         if (surname === null || surname.replace(/\s/g, '').length === 0) {
             surname= 'the Baby';
         } else{
+            document.getElementById('surname').innerHTML= surname;
             surname = 'the Baby ' + surname;
         }
         class ConstellationReveal {
@@ -226,6 +241,7 @@
             }
            
             init() {
+                document.getElementById('id01').style.display='block';
                 // Set additional star color to colortxt at the beginning
                 document.documentElement.style.setProperty('--additional-star-color', colortxt);
                 this.handleResizeOrOrientationChange();
@@ -233,6 +249,24 @@
                 // Show first star
                 window.addEventListener('resize', () => this.handleResizeOrOrientationChange());
                 window.addEventListener('orientationchange', () => this.handleResizeOrOrientationChange());
+                const nsound = document.getElementById('nosoundbtn');
+                nsound.addEventListener('click', () => {
+                    document.getElementById('id01').style.display='none';
+                    nosound=true;
+                });
+                const wsound = document.getElementById('withsoundbtn');
+                    wsound.addEventListener('click', () => {
+                    document.getElementById('id01').style.display='none';
+                    nosound=false;
+                    soundHandle = document.getElementById('soundHandle');              
+                    soundHandle.autoplay = true;
+                    soundHandle.muted=false;
+                    soundHandle.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+                     // Play once to unlock audio on iOS
+                    soundHandle.play().catch(err => {
+                        console.warn("Autoplay blocked:", err);
+                    });        
+                });
             }
 
             handleResizeOrOrientationChange() {
@@ -437,7 +471,14 @@
                 if (this.isRevealed || clickedIndex !== this.currentStarIndex) {
                     return;
                 }
-                
+                if (!nosound) {
+                    soundHandle.pause();
+                    soundHandle.currentTime = 0;
+                    soundHandle.src = "sparkle.mp3";
+                    soundHandle.volume = 1;
+                    soundHandle.muted = false;
+                    soundHandle.play().catch(() => {});
+                }
                 // Clear hint timer
                 if (this.hintTimer) {
                     clearTimeout(this.hintTimer);
@@ -469,9 +510,9 @@
                 this.currentStarIndex++;
                 
                 // Hide instructions after first click
-                if (this.currentStarIndex === 1) {
+                /* if (this.currentStarIndex === 1) {
                     this.instructions.classList.add('hidden');
-                }
+                } */
                 
                 // Check if main constellation is complete
                 if (this.currentStarIndex >= this.constellationStars.length) {
@@ -479,6 +520,14 @@
                     setTimeout(() => {
                         this.completeReveal();
                     }, 1000);
+                    if (!nosound) {
+                        soundHandle.pause();
+                        soundHandle.currentTime = 0;
+                        soundHandle.src = "chimes.mp3";
+                        soundHandle.volume = 1;
+                        soundHandle.muted = false;
+                        soundHandle.play().catch(() => {});
+                    }
                     // Constellation pulse
                     this.constellationStars.forEach((star, index) => {
                     setTimeout(() => {
@@ -588,7 +637,9 @@
             completeReveal() {
                 this.isRevealed = true;
                 // Create shooting stars animation
+                this.instructions.classList.add('hidden');
                 this.createShootingStars();
+                
                 // Show reveal message after short delay
                 setTimeout(() => {
                     const genderText = document.getElementById('genderText');
