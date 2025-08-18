@@ -24,7 +24,10 @@
         <div class="gender-text" id="genderText"></div><br>
         <div class="baby-text" id="babyText">The stars revealed the secret for the Baby!</div>
     </div>
-
+     <div id="progress-indicator">
+        <div id="progress-text">Click the glowing star to begin...</div>
+        <div id="constellation-name"></div>
+    </div>
     <script>
         // Configuration - Change these values to customize
         const CONFIG = {
@@ -439,9 +442,9 @@
                 if (this.hintTimer) {
                     clearTimeout(this.hintTimer);
                 }
-                
+                this.updateProgress(clickedIndex);
                 const star = this.constellationStars[clickedIndex];
-                
+                this.createSparkleEffect(star);
                 // Hide touch hint
                 const hint = star.querySelector('.touch-hint');
                 if (hint) {
@@ -476,6 +479,12 @@
                     setTimeout(() => {
                         this.completeReveal();
                     }, 1000);
+                    // Constellation pulse
+                    this.constellationStars.forEach((star, index) => {
+                    setTimeout(() => {
+                        this.pulseStarFinal(star);
+                    }, index * 100);
+            });
                 } else {
                     // Show next star
                     setTimeout(() => {
@@ -510,7 +519,72 @@
             this.ctx.lineTo(toX, toY);
             this.ctx.stroke();
         }
+ // Create sparkle effect
+        createSparkleEffect(star) {
+            const rect = star.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            for (let i = 0; i < 8; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'cosmic-burst';
+                sparkle.style.left = centerX + (Math.random() - 0.5) * 40 + 'px';
+                sparkle.style.top = centerY + (Math.random() - 0.5) * 40 + 'px';
+                document.body.appendChild(sparkle);
+                
+                this.animateSparkle(sparkle);
+            }
+        }
 
+        // Animate sparkle effect
+        animateSparkle(sparkle) {
+            let scale = 1;
+            let opacity = 1;
+            
+            const animate = () => {
+                scale += 0.1;
+                opacity -= 0.05;
+                sparkle.style.transform = `scale(${scale})`;
+                sparkle.style.opacity = Math.max(opacity, 0);
+                
+                if (opacity > 0) {
+                    requestAnimationFrame(animate);
+                } else {
+                    sparkle.remove();
+                }
+            };
+            animate();
+        }
+        // Pulse star final effect
+        pulseStarFinal(star) {
+            let scale = 1.2;
+            let pulses = 0;
+            const maxPulses = 6;
+            
+            const pulse = () => {
+                scale = scale === 1.2 ? 1.8 : 1.2;
+                star.style.transform = `scale(${scale})`;
+                pulses++;
+                
+                if (pulses < maxPulses) {
+                    setTimeout(pulse, 200);
+                }
+            };
+            pulse();
+        }
+        // Update progress indicator
+        updateProgress(clickedIndex) {
+            const progressIndicator = document.getElementById('progress-indicator');
+            const progressText = document.getElementById('progress-text');
+            
+            progressIndicator.style.opacity = '1';
+            
+            if (clickedIndex + 1 < this.constellationStars.length) {
+                progressText.textContent = `${clickedIndex+1}/${this.constellationStars.length} stars clicked`;
+            } else {
+                progressText.textContent = 'Constellation complete!';
+            }
+        }
             completeReveal() {
                 this.isRevealed = true;
                 // Create shooting stars animation
@@ -537,6 +611,7 @@
                         babyText.textContent = surname + ' will be Graceful and Radiant — like Andromeda, the princess of the stars';
 
                     }
+                    document.getElementById('progress-indicator').style.opacity = '0';
 
                 }, 1000);
             }
