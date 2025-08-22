@@ -43,8 +43,8 @@
         
         .constellation-star, .constellation-star.additional {
             position: absolute;
-            width: 1rem;
-            height: 1rem;
+            width: 0.8rem;
+            height: 0.8rem;
             opacity: 0;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -284,7 +284,7 @@
             color: rgba(255, 255, 255, 0.9);
             text-align: center;
             text-shadow: 0 0 20px rgba(255, 255, 255, 0.7);
-            font-size: 2em;
+            font-size: 1.8rem;
             z-index: 10;
             opacity: 1;
             transition: opacity 0.5s ease;
@@ -323,8 +323,8 @@
 button {
   background-color: #04AA6D;
   color: white;
-  padding: 14px 20px;
-  margin: 8px 0;
+  padding: 1em 1em;
+  margin: 0.5em 0;
   border: none;
   cursor: pointer;
   width: 100%;
@@ -377,7 +377,7 @@ button:hover {
   background-color: #fefefe;
   margin: 5% auto 15% auto; /* 5% from the top, 15% from the bottom and centered */
   border: 1px solid #888;
-  width: 60%; /* Could be more or less, depending on screen size */
+  width: 75%; /* Could be more or less, depending on screen size */
   word-break: break-word;
 }
 h2 {
@@ -413,7 +413,21 @@ hr {
   clear: both;
   display: table;
 }
+/* Change styles for cancel button and delete button on extra small screens */
+@media screen and (max-width: 321px) {
+  #nosoundbtn, #withsoundbtn {
+    font-size: 4vw; 
+    width: 100%;
+  }
+  h2{
+    font-size: 6vw;
+  }
+  .instructions {
+        font-size: 1.5rem;
+    }
+}
 /* Mobile responsiveness */
+/*desktop */
 @media (min-height: 635px) and (min-width: 1024px){ 
     .instructions {
         font-size: 3rem;
@@ -430,14 +444,22 @@ hr {
         transform: translate(-50%, -50%);
   }
 }
-@media (max-width: 320px) { 
-  .instructions {
-        font-size: 1.5rem;
-    }  
+/*tablet*/
+@media (min-width: 768px) and (min-height: 930px){ 
+      .instructions {
+        font-size: 3rem;
+    }
+     .constellation-star {
+        width: 1.1rem;
+        height: 1.1rem;
+    }
 }
 /* @media (min-width: 376px), (max-width:1024px){ 
  
 }
+@media (max-width: 360px) {
+  
+} 
 
 @media (min-width: 768px) and (min-height: 930px){ 
  .constellation-star {

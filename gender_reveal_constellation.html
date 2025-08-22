@@ -17,7 +17,7 @@
         <span onclick="document.getElementById('id01').style.display='none'" class="close" title="Close">×</span>
         <form class="modal-content" action="javascript:void(0);">
         <div class="container">
-            <h2 id="intro">This is a gender reveal star constellation for <span id="surname" style="font-weight:bold; white-space:normal">the</span> family. It contains high level sound. Do you want to continue with sound?</h2>      
+            <h2 id="intro">This is a gender reveal star constellation for <span id="surname" style="white-space:normal">the</span> family. It contains high level sound. Do you want to continue with sound?</h2>      
             <!-- <h5 style="color:red; white-space: normal;">This is a demo with limited functionality. So only middle row can be scratched.</h5> -->
             <div class="clearfix">
             <button type="button" id="nosoundbtn">No Sound</button>
@@ -40,7 +40,7 @@
     </div>
      <div id="progress-indicator">
         <div id="progress-text">Click the glowing star to begin...</div>
-        <div id="constellation-name"></div>
+        <button type="button" id="restart-btn" style="display:none;margin-top:0.2em;z-index:15">Restart</button>
     </div>
     <script>
         // Configuration - Change these values to customize
@@ -134,6 +134,71 @@
         };
         // Global variables for params and surname
         let timeout;
+        let game;
+        let isRevealPending = false;
+        function cleanupAndResetIfRevealed() {
+            // If game is defined and revealed, do full cleanup
+            if (game && game.isRevealed) {
+                // Clear all shooting star and restart button timeouts globally
+                if (window._shootingStarTimeouts) {
+                    window._shootingStarTimeouts.forEach(t => clearTimeout(t));
+                    window._shootingStarTimeouts.length = 0;
+                }
+                if (window._restartButtonTimeout) {
+                    clearTimeout(window._restartButtonTimeout);
+                    window._restartButtonTimeout = null;
+                }
+                // Clear revealTimeout
+                if (game.revealTimeout) {
+                    clearTimeout(game.revealTimeout);
+                    game.revealTimeout = null;
+                }
+                // Stop sound
+                if (soundHandle) {
+                    soundHandle.pause();
+                    soundHandle.currentTime = 0;
+                }
+                // Remove all shooting stars and sparkles
+                document.querySelectorAll('.shooting-star, .cosmic-burst').forEach(e => e.remove());
+                // Stop genderText and babyText animations
+                const genderText = document.getElementById('genderText');
+                const babyText = document.getElementById('babyText');
+                if (genderText) {
+                    genderText.classList.remove('animate');
+                    genderText.style.animation = 'none';
+                }
+                if (babyText) {
+                    babyText.style.animation = 'none';
+                }
+                game.resetGame();
+                isRevealPending = false;
+            } else if (isRevealPending) {
+                // Minimal DOM cleanup if game is not yet defined but reveal is pending
+                document.querySelectorAll('.shooting-star, .cosmic-burst').forEach(e => e.remove());
+                const restartBtn = document.getElementById('restart-btn');
+                if (restartBtn) restartBtn.style.display = 'none';
+                const genderText = document.getElementById('genderText');
+                const babyText = document.getElementById('babyText');
+                if (genderText) {
+                    genderText.classList.remove('animate');
+                    genderText.style.animation = 'none';
+                }
+                if (babyText) {
+                    babyText.style.animation = 'none';
+                }
+                isRevealPending = false;
+            }
+        }
+        document.addEventListener("visibilitychange", function() {
+            if (document.visibilityState !== "visible") {
+                cleanupAndResetIfRevealed();
+            }
+        });
+        window.addEventListener("blur", function() {
+            cleanupAndResetIfRevealed();
+        });
+        // Global variables for params and surname
+        
         var color1 = '#ff95c8';
         var color2 = '#0128A5FF';
         var color3 ='#969696';
@@ -150,7 +215,6 @@
         //Select the gender text
         var gendertext = gendertext1;
         var soundHandle = new Audio();
-        var triggered=false;
         var nosound=true;
         let params = new URLSearchParams(window.location.search.slice(1));
         let surname = params.get('surname');
@@ -164,9 +228,12 @@
         if (surname === null || surname.replace(/\s/g, '').length === 0) {
             surname= 'the Baby';
         } else{
-            document.getElementById('surname').innerHTML= surname;
+            const mess = document.getElementById('surname');
+            mess.innerHTML= surname;
+            mess.style.fontWeight = 'bold';
             surname = 'the Baby ' + surname;
         }
+        
         class ConstellationReveal {
             constructor() {
                 this.canvas = document.getElementById('constellationCanvas');
@@ -174,13 +241,17 @@
                 this.starsContainer = document.getElementById('starsContainer');
                 this.instructions = document.getElementById('instructions');
                 this.revealContainer = document.getElementById('revealContainer');
-                
+                this.progressText = document.getElementById('progress-text');
                 this.currentConstellation = CONSTELLATIONS[CONFIG.constellation];
                 this.currentStarIndex = 0;
                 this.constellationStars = [];
                 this.lines = [];
                 this.isRevealed = false;
-                
+                this.shootingStarTimeouts = [];
+                this.restartButtonTimeout = null;
+                this.revealTimeout = null;
+                window._shootingStarTimeouts = this.shootingStarTimeouts;
+                window._restartButtonTimeout = this.restartButtonTimeout;
                 this.init();
             }
 
@@ -255,7 +326,7 @@
                     nosound=true;
                 });
                 const wsound = document.getElementById('withsoundbtn');
-                    wsound.addEventListener('click', () => {
+                wsound.addEventListener('click', () => {
                     document.getElementById('id01').style.display='none';
                     nosound=false;
                     soundHandle = document.getElementById('soundHandle');              
@@ -267,6 +338,88 @@
                         console.warn("Autoplay blocked:", err);
                     });        
                 });
+                // Always attach restart button event listener
+                const restartBtn = document.getElementById('restart-btn');
+                if (restartBtn) {
+                    restartBtn.onclick = () => {
+                        restartBtn.style.display = 'none';
+                        this.resetGame();
+                    };
+                }
+            }
+
+            completeReveal() {
+                isRevealPending = true;
+                this.isRevealed = true;
+                this.createShootingStars();
+                this.revealTimeout = setTimeout(() => {
+                    const genderText = document.getElementById('genderText');
+                    genderText.textContent = gendertext;
+                    genderText.classList.add('animate');
+                    // Set solid color for genderText using color variable
+                    genderText.style.background = '';
+                    genderText.style.backgroundClip = '';
+                    genderText.style.webkitBackgroundClip = '';
+                    genderText.style.webkitTextFillColor = '';
+                    genderText.style.textFillColor = '';
+                    genderText.style.color = colortxt;
+                    this.revealContainer.classList.add('show');
+                    // Set babyText with surname if set, otherwise fallback
+                    const babyText = document.getElementById('babyText');                    
+                    this.playsound("celebrate.mp3");
+                   
+                    if (gendertext==gendertext2){
+                        babyText.textContent = surname + ' will be Strong and Bold — just like Orion, the great hunter in the sky';
+                    }else {
+                        babyText.textContent = surname + ' will be Graceful and Radiant — like Andromeda, the princess of the stars';
+                    }
+                    document.getElementById('progress-indicator').style.opacity = '0';
+                    // Show restart button after 7s
+                    this.restartButtonTimeout = setTimeout(() => {
+                        const restartBtn = document.getElementById('restart-btn');
+                        restartBtn.style.display = 'inline-block';
+                        document.getElementById('progress-indicator').style.opacity = '1';
+                        this.progressText.textContent = 'Click Restart to play again.';
+                    }, 7000);
+                }, 500);
+            }
+
+            resetGame() {
+                // Clear revealTimeout
+                if (this.revealTimeout) {
+                    clearTimeout(this.revealTimeout);
+                    this.revealTimeout = null;
+                }
+                // Clear shooting star timeouts
+                this.shootingStarTimeouts.forEach(t => clearTimeout(t));
+                this.shootingStarTimeouts = [];
+                // Clear restart button timeout
+                if (this.restartButtonTimeout) {
+                    clearTimeout(this.restartButtonTimeout);
+                    this.restartButtonTimeout = null;
+                }
+                // Remove overlays, shooting stars, sparkles, etc.
+                const overlay = document.getElementById('overlay-img');
+                if (overlay) overlay.remove();
+                document.querySelectorAll('.shooting-star, .cosmic-burst').forEach(e => e.remove());
+                // Reset reveal UI
+                this.revealContainer.classList.remove('show');
+                document.getElementById('genderText').textContent = '';
+                document.getElementById('babyText').textContent = 'The stars revealed the secret for the Baby!';
+                document.getElementById('progress-indicator').style.opacity = '1';
+                this.progressText.textContent = 'Click the glowing star to begin...';
+                // Hide restart button
+                document.getElementById('restart-btn').style.display = 'none';
+                // Remove all constellation and additional stars
+                if (this.constellationStars) this.constellationStars.forEach(star => star.remove());
+                if (this.additionalStars) this.additionalStars.forEach(star => star.remove());
+                this.instructions.classList.remove('hidden');
+                this.constellationStars = [];
+                this.additionalStars = [];
+                this.currentStarIndex = 0;
+                this.isRevealed = false;
+                // Redraw everything and re-attach listeners
+                this.init();
             }
 
             handleResizeOrOrientationChange() {
@@ -471,14 +624,8 @@
                 if (this.isRevealed || clickedIndex !== this.currentStarIndex) {
                     return;
                 }
-                if (!nosound) {
-                    soundHandle.pause();
-                    soundHandle.currentTime = 0;
-                    soundHandle.src = "sparkle.mp3";
-                    soundHandle.volume = 1;
-                    soundHandle.muted = false;
-                    soundHandle.play().catch(() => {});
-                }
+                this.playsound("sparkle.mp3");
+                this.instructions.classList.add('hidden');
                 // Clear hint timer
                 if (this.hintTimer) {
                     clearTimeout(this.hintTimer);
@@ -520,14 +667,7 @@
                     setTimeout(() => {
                         this.completeReveal();
                     }, 1000);
-                    if (!nosound) {
-                        soundHandle.pause();
-                        soundHandle.currentTime = 0;
-                        soundHandle.src = "chimes.mp3";
-                        soundHandle.volume = 1;
-                        soundHandle.muted = false;
-                        soundHandle.play().catch(() => {});
-                    }
+                   this.playsound("chimes.mp3");
                     // Constellation pulse
                     this.constellationStars.forEach((star, index) => {
                     setTimeout(() => {
@@ -541,7 +681,16 @@
                     }, 100);
                 }
             }
-
+            playsound (src) {
+                 if (!nosound) {
+                        soundHandle.pause();
+                        soundHandle.currentTime = 0;
+                        soundHandle.src = src;
+                        soundHandle.volume = 1;
+                        soundHandle.muted = false;
+                        soundHandle.play().catch(() => {});
+                    }
+            }
            drawLine(fromStar, toStar) {
             // Draw lines using the DOM position of the stars, relative to the canvas
             const canvasRect = this.canvas.getBoundingClientRect();
@@ -624,54 +773,20 @@
         // Update progress indicator
         updateProgress(clickedIndex) {
             const progressIndicator = document.getElementById('progress-indicator');
-            const progressText = document.getElementById('progress-text');
             
             progressIndicator.style.opacity = '1';
             
             if (clickedIndex + 1 < this.constellationStars.length) {
-                progressText.textContent = `${clickedIndex+1}/${this.constellationStars.length} stars clicked`;
+                this.progressText.textContent = `${clickedIndex+1}/${this.constellationStars.length} stars clicked`;
             } else {
-                progressText.textContent = 'Constellation complete!';
+                this.progressText.textContent = 'Constellation complete!';
             }
         }
-            completeReveal() {
-                this.isRevealed = true;
-                // Create shooting stars animation
-                this.instructions.classList.add('hidden');
-                this.createShootingStars();
-                
-                // Show reveal message after short delay
-                setTimeout(() => {
-                    const genderText = document.getElementById('genderText');
-                    genderText.textContent = gendertext;
-                    genderText.classList.add('animate');
-                    // Set solid color for genderText using color variable
-                    genderText.style.background = '';
-                    genderText.style.backgroundClip = '';
-                    genderText.style.webkitBackgroundClip = '';
-                    genderText.style.webkitTextFillColor = '';
-                    genderText.style.textFillColor = '';
-                    genderText.style.color = colortxt;
-                    this.revealContainer.classList.add('show');
-                    // Set babyText with surname if set, otherwise fallback
-                    const babyText = document.getElementById('babyText');                    
-                   
-                    if (gendertext==gendertext2){
-                        babyText.textContent = surname + ' will be Strong and Bold — just like Orion, the great hunter in the sky';
-                    }else {
-                        babyText.textContent = surname + ' will be Graceful and Radiant — like Andromeda, the princess of the stars';
-
-                    }
-                    document.getElementById('progress-indicator').style.opacity = '0';
-
-                }, 1000);
-            }
-
             createShootingStars() {
                 // Get canvas position and size
                 const canvasRect = this.canvas.getBoundingClientRect();
                 for (let i = 0; i < 100; i++) {
-                    setTimeout(() => {
+                    const t = setTimeout(() => {
                         const shootingStar = document.createElement('div');
                         shootingStar.className = 'shooting-star';
                         // Randomize which edge to start from (top, left, right)
@@ -716,15 +831,76 @@
                             shootingStar.remove();
                         }, 1200);
                     }, i * 50);
+                    this.shootingStarTimeouts.push(t);
                 }
             }
         }
 
         // Initialize the reveal when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            new ConstellationReveal();
-        });
+        function cleanupAndResetIfRevealed() {
+        if (game && game.isRevealed) {
+                // Clear revealTimeout
+                if (game.revealTimeout) {
+                    clearTimeout(game.revealTimeout);
+                    game.revealTimeout = null;
+                }
+                // Clear all shooting star and restart button timeouts globally
+                if (window._shootingStarTimeouts) {
+                    window._shootingStarTimeouts.forEach(t => clearTimeout(t));
+                    window._shootingStarTimeouts.length = 0;
+                }
+                if (window._restartButtonTimeout) {
+                    clearTimeout(window._restartButtonTimeout);
+                    window._restartButtonTimeout = null;
+                }
 
+                // Stop sound
+                if (soundHandle) {
+                    soundHandle.pause();
+                    soundHandle.currentTime = 0;
+                }
+                // Remove all shooting stars and sparkles
+                document.querySelectorAll('.shooting-star, .cosmic-burst').forEach(e => e.remove());
+                // Stop genderText and babyText animations
+                const genderText = document.getElementById('genderText');
+                const babyText = document.getElementById('babyText');
+                if (genderText) {
+                    genderText.classList.remove('animate');
+                    genderText.style.animation = 'none';
+                }
+                if (babyText) {
+                    babyText.style.animation = 'none';
+                }
+                game.resetGame();
+                isRevealPending = false;
+            } else if (isRevealPending) {
+                // Minimal DOM cleanup if game is not yet defined but reveal is pending
+                document.querySelectorAll('.shooting-star, .cosmic-burst').forEach(e => e.remove());
+                const restartBtn = document.getElementById('restart-btn');
+                if (restartBtn) restartBtn.style.display = 'none';
+                const genderText = document.getElementById('genderText');
+                const babyText = document.getElementById('babyText');
+                if (genderText) {
+                    genderText.classList.remove('animate');
+                    genderText.style.animation = 'none';
+                }
+                if (babyText) {
+                    babyText.style.animation = 'none';
+                }
+                isRevealPending = false;
+            }
+        }
+        document.addEventListener("visibilitychange", function() {
+            if (document.visibilityState !== "visible") {
+                cleanupAndResetIfRevealed();
+            }
+        });
+        window.addEventListener("blur", function() {
+            cleanupAndResetIfRevealed();
+        });
+        document.addEventListener('DOMContentLoaded', () => {
+            game = new ConstellationReveal();
+        });
     </script>
 </body>
 </html>

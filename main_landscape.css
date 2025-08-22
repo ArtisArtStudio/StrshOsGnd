@@ -93,3 +93,25 @@ body {
 .instructions.hidden {
     opacity: 0;
 }
+#progress-indicator {
+            top: 80%;
+}
+#restart-btn {
+  padding: 0.5em 0.5em;
+  margin: 0 0;
+  width: 80%;
+}
+@media screen and (max-height: 321px) {
+  #nosoundbtn, #withsoundbtn {
+    font-size: 2vw; 
+  }
+  h2{
+    font-size: 4vw;
+  }
+  .instructions {
+        font-size: 1.5rem;
+    }
+    #progress-indicator {
+        font-size: 0.9rem;
+    }
+}
