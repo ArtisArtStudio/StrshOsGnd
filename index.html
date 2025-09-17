@@ -26,7 +26,6 @@
         </div>
         </form>
     </div>
-    <audio id="soundHandle" style="display:none;" src="" type="audio/mpeg"></audio>
     <div class="stars-container" id="starsContainer"></div>
     <canvas class="constellation-canvas" id="constellationCanvas"></canvas>
     
@@ -47,7 +46,8 @@
         const CONFIG = {
             numBackgroundStars: 150
         };
-
+        let audioCtx;
+        const sounds = {};
         // Constellation data - complete Orion formation
         const CONSTELLATIONS = {
             orion: {
@@ -154,10 +154,7 @@
                     game.revealTimeout = null;
                 }
                 // Stop sound
-                if (soundHandle) {
-                    soundHandle.pause();
-                    soundHandle.currentTime = 0;
-                }
+                stopAllSounds();
                 // Remove all shooting stars and sparkles
                 document.querySelectorAll('.shooting-star, .cosmic-burst').forEach(e => e.remove());
                 // Stop genderText and babyText animations
@@ -327,16 +324,26 @@
                 });
                 const wsound = document.getElementById('withsoundbtn');
                 wsound.addEventListener('click', () => {
-                    document.getElementById('id01').style.display='none';
-                    nosound=false;
-                    soundHandle = document.getElementById('soundHandle');              
-                    soundHandle.autoplay = true;
-                    soundHandle.muted=false;
-                    soundHandle.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
-                     // Play once to unlock audio on iOS
-                    soundHandle.play().catch(err => {
-                        console.warn("Autoplay blocked:", err);
-                    });        
+                document.getElementById('id01').style.display = 'none';
+                nosound = false;
+
+                // Create context on user gesture
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === "suspended") audioCtx.resume();
+
+                // 🔑 Unlock with a silent click *immediately*, no async/await
+                const buffer = audioCtx.createBuffer(1, 1, 22050);
+                const source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioCtx.destination);
+                source.start(0);
+
+                // After unlocking, now kick off async loading (safe)
+                Promise.all([
+                    loadSound('sparkle', 'sparkle.mp3'),
+                    loadSound('chimes', 'chimes.mp3'),
+                    loadSound('celebrate', 'celebrate.mp3')
+                ]).catch(err => console.error("Sound load error:", err));
                 });
                 // Always attach restart button event listener
                 const restartBtn = document.getElementById('restart-btn');
@@ -366,7 +373,7 @@
                     this.revealContainer.classList.add('show');
                     // Set babyText with surname if set, otherwise fallback
                     const babyText = document.getElementById('babyText');                    
-                    this.playsound("celebrate.mp3");
+                    this.playsound("celebrate");
                    
                     if (gendertext==gendertext2){
                         babyText.textContent = surname + ' will be Strong and Bold — just like Orion, the great hunter in the sky';
@@ -624,7 +631,7 @@
                 if (this.isRevealed || clickedIndex !== this.currentStarIndex) {
                     return;
                 }
-                this.playsound("sparkle.mp3");
+                this.playsound("sparkle");
                 this.instructions.classList.add('hidden');
                 // Clear hint timer
                 if (this.hintTimer) {
@@ -667,7 +674,7 @@
                     setTimeout(() => {
                         this.completeReveal();
                     }, 1000);
-                   this.playsound("chimes.mp3");
+                   this.playsound("chimes");
                     // Constellation pulse
                     this.constellationStars.forEach((star, index) => {
                     setTimeout(() => {
@@ -681,16 +688,16 @@
                     }, 100);
                 }
             }
-            playsound (src) {
-                 if (!nosound) {
-                        soundHandle.pause();
-                        soundHandle.currentTime = 0;
-                        soundHandle.src = src;
-                        soundHandle.volume = 1;
-                        soundHandle.muted = false;
-                        soundHandle.play().catch(() => {});
+            
+        playsound(name) {
+            if (!nosound && sounds[name] && audioCtx) {
+                const source = audioCtx.createBufferSource();
+                source.buffer = sounds[name];
+                source.connect(audioCtx.destination);
+                source.start(0);
                     }
             }
+
            drawLine(fromStar, toStar) {
             // Draw lines using the DOM position of the stars, relative to the canvas
             const canvasRect = this.canvas.getBoundingClientRect();
@@ -835,7 +842,43 @@
                 }
             }
         }
+        async function loadSound(name, url) {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+
+        return new Promise((resolve, reject) => {
+            // Try Promise-based first
+            let decodeResult;
+            try {
+            decodeResult = audioCtx.decodeAudioData(arrayBuffer);
+            } catch (err) {
+            decodeResult = null;
+            }
+
+            if (decodeResult && decodeResult.then) {
+            decodeResult.then(buffer => {
+                sounds[name] = buffer;
+                resolve(buffer);
+            }).catch(err => reject(err));
+            } else {
+            // Fallback for old Safari
+            audioCtx.decodeAudioData(arrayBuffer,
+                buffer => {
+                sounds[name] = buffer;
+                resolve(buffer);
+                },
+                err => reject(err)
+            );
+            }
+        });
+        }
+        function stopAllSounds() {
+            if (audioCtx) {
+                audioCtx.suspend(); // pauses all currently playing sounds
+            }
+        }
         // Initialize the reveal when page loads
         function cleanupAndResetIfRevealed() {
         if (game && game.isRevealed) {
@@ -855,10 +898,7 @@
                 }
 
                 // Stop sound
-                if (soundHandle) {
-                    soundHandle.pause();
-                    soundHandle.currentTime = 0;
-                }
+                stopAllSounds();
                 // Remove all shooting stars and sparkles
                 document.querySelectorAll('.shooting-star, .cosmic-burst').forEach(e => e.remove());
                 // Stop genderText and babyText animations
